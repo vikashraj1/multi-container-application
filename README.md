@@ -47,7 +47,7 @@ curl -X POST http://todoapi.app/todos \
      ```
    - Download `Vagrantfile`:
      ```bash
-     curl -O https://raw.githubusercontent.com/vikashraj1/multi-container-application/refs/heads/main/Infra/vagrant/Vagrantfile
+     curl -kO https://raw.githubusercontent.com/vikashraj1/multi-container-application/refs/heads/main/Infra/vagrant/Vagrantfile
      ```
    - Create a shared folder and clone the project repository:
      ```bash
@@ -126,8 +126,6 @@ curl -X POST http://todoapi.app/todos \
     ```
 
 - In the `ansible_code/inventory` file, replace the values of `ansible_host` and `ansible_user` with public IP of the EC2 instance.
-
-- Remove or comment out the first two tasks in `ansible_code/playbook.yml` that are specific to Vagrant-based infrastructure.
 
 - Add `DOCKER_USERNAME` and `DOCKER_PASSWORD` credentials as secrets for GitHub Actions workflow.
 
