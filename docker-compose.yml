@@ -16,7 +16,7 @@ services:
   nodeapi:
     container_name: nodeapi
     hostname: nodeapi
-    image: vikashmrm/todoapi:latest
+    image: vikash001/todoapi:latest
     restart: always
     depends_on:
       - mongodb
