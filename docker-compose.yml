@@ -1,0 +1,44 @@
+services:
+  mongodb:
+    image: mongo:4.4
+    # image: mongo:8.0.4
+    container_name: mongodb
+    hostname: mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+
+
+  nodeapi:
+    container_name: nodeapi
+    hostname: nodeapi
+    image: vikashmrm/todoapi:latest
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      PORT: ${PORT}
+      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      NODE_ENV: ${NODE_ENV}
+
+
+  nginx:
+    container_name: nginx
+    depends_on:
+      - nodeapi
+    image: nginx:1.27.4-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+
+
+volumes:
+  mongodb_data:
+  mongodb_config:

@@ -1,0 +1,6 @@
+name: Lint and Quality Check
+
+on:
+  push:
+    branches:
+      - release

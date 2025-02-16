@@ -1,0 +1,6 @@
+name: Code test
+
+on:
+  push:
+    branches:
+      - release

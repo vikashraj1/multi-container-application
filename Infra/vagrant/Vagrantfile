@@ -1,0 +1,52 @@
+Vagrant.configure("2") do |config|
+  config.ssh.insert_key = false
+
+
+  config.vm.define "ubuntu" do |web|
+    web.vm.box = "ubuntu/jammy64"
+    web.vm.hostname = "ubuntu"
+    web.vm.network "private_network", ip: "192.168.50.20"
+
+    config.vm.synced_folder "./shared", "/root/shared"
+
+    config.vm.provision "shell", inline: <<-SHELL
+      sudo apt update && apt upgrade -y
+      sudo cat /root/shared/ansible_code/ubuntukey.pub >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = 4
+    end
+  end
+
+
+
+  config.vm.define "ansible" do |web|
+    web.vm.box = "ubuntu/jammy64"
+    web.vm.hostname = "ansible"
+    web.vm.network "private_network", ip: "192.168.50.10"
+
+    config.vm.synced_folder "./shared", "/root/shared"
+
+    config.vm.provision "shell", inline: <<-SHELL
+      sudo apt update && apt upgrade -y
+      sudo apt install python3 -y
+      
+      UBUNTU_CODENAME=jammy
+      wget -O- "https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=get&search=0x6125E2A8C77F2818FB7BD15B93C4A3FD7BB9C367" | sudo gpg --dearmour -o /usr/share/keyrings/ansible-archive-keyring.gpg
+      echo "deb [signed-by=/usr/share/keyrings/ansible-archive-keyring.gpg] http://ppa.launchpad.net/ansible/ansible/ubuntu $UBUNTU_CODENAME main" | sudo tee /etc/apt/sources.list.d/ansible.list
+      sudo apt update && sudo apt install ansible -y
+      mv /etc/ansible/ansible.cfg /etc/ansible/ansible.cfg.backup
+      cp /root/shared/ansible_code/ansible.cfg /etc/ansible/ansible.cfg
+
+    SHELL
+
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = 4
+    end
+  end
+
+
+end

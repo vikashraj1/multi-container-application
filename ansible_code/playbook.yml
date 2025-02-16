@@ -1,0 +1,138 @@
+---
+- hosts: ubuntu
+  become: true
+  tasks:
+
+    # <-- for vagrant infra only
+
+    - name: Ensure todoapi.app host entry is present
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '.*\btodoapi\.app\b'
+        line: "192.168.50.20 todoapi.app"
+        state: present
+
+    - name: Ensure todoapi.app host entry in control machine
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: '.*\btodoapi\.app\b'
+        line: "192.168.50.20 todoapi.app"
+        state: present
+      delegate_to: localhost
+
+    # --->
+
+    - name: Remove multiple packages on Ubuntu
+      ansible.builtin.apt:
+        name:
+        - docker.io
+        - docker-doc
+        - docker-compose
+        - docker-compose-v2
+        - podman-docker
+        - containerd
+        - runc
+        state: absent
+
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: add pkgs 1
+      ansible.builtin.apt:
+        name:
+        - ca-certificates
+        - curl  
+        state: present
+
+    - name: Create /etc/apt/keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Get architecture using dpkg
+      command: dpkg --print-architecture
+      register: dpkg_architecture
+
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ dpkg_architecture.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Update apt package cache again
+      ansible.builtin.apt:
+        update_cache: yes
+    
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+        state: present
+
+
+    # Compose section
+
+    - name: Docker login
+      docker_login:
+        username: "{{ lookup('ansible.builtin.env', 'DOCKER_USERNAME') }}"
+        password: "{{ lookup('ansible.builtin.env', 'DOCKER_PASSWORD') }}"
+        reauthorize: yes
+
+
+    - name: Compose
+      environment:
+        MONGODB_URI: "mongodb://root:example@mongodb:27017/todo-app?authSource=admin"
+        PORT: "3000"
+        MONGO_ROOT_USERNAME: "root"
+        MONGO_ROOT_PASSWORD: "example"
+        NODE_ENV: "production"
+      community.docker.docker_compose_v2:
+        project_src: /root/shared # move/clone the src to "shared" folder under the directory of Vagrantfile or Use . if running from github actions
+        files:
+          - docker-compose.yml
+        state: present
+        remove_orphans: true
+        timeout: 120
+        wait: true
+        wait_timeout: 60
+      register: compose_output
+
+
+
+    # Debug section
+
+    # - name: Save compose_output to a JSON file on control machine
+    #   delegate_to: localhost
+    #   copy:
+    #     content: "{{ compose_output | to_nice_json }}"
+    #     dest: "/root/shared/todoapi-stable/ansible_code/compose_output.json"
+
+    # - name: Get docker compose logs
+    #   command: docker compose logs
+    #   args:
+    #     chdir: /root/shared/todoapi-stable
+    #   register: compose_logs
+
+    # - name: Save compose logs
+    #   delegate_to: localhost
+    #   copy:
+    #     content: "{{ compose_logs | to_nice_json }}"
+    #     dest: "/root/shared/todoapi-stable/ansible_code/compose_logs.json"
+
+
+    - name: Log out of DockerHub
+      docker_login:
+        state: absent

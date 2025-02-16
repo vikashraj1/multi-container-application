@@ -1,0 +1,103 @@
+---
+- hosts: all
+  become: true
+  tasks:
+
+    - name: Remove multiple packages on Ubuntu
+      ansible.builtin.apt:
+        name:
+        - docker.io
+        - docker-doc
+        - docker-compose
+        - docker-compose-v2
+        - podman-docker
+        - containerd
+        - runc
+        state: absent
+
+    - name: Update apt package cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: add pkgs 1
+      ansible.builtin.apt:
+        name:
+        - ca-certificates
+        - curl  
+        state: present
+
+    - name: Create /etc/apt/keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Get architecture using dpkg
+      command: dpkg --print-architecture
+      register: dpkg_architecture
+
+
+    - name: Add Docker repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch={{ dpkg_architecture.stdout }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+        filename: docker
+
+    - name: Update apt package cache again
+      ansible.builtin.apt:
+        update_cache: yes
+    
+    - name: Install Docker
+      ansible.builtin.apt:
+        name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+        state: present
+
+    # Compose section
+
+    - name: Compose
+      community.docker.docker_compose_v2:
+        project_src: /root/shared/todoapi-stable
+        files:
+        - docker-compose.yml
+        state: present
+        remove_orphans: true
+        timeout: 600
+        wait: true
+        wait_timeout: 120
+      register: compose_output
+
+    # - name: Debug compose output        
+    #   debug:
+    #     var: compose_output
+
+
+    # Debug section
+
+    - name: Save compose_output to a JSON file on control machine
+      delegate_to: localhost
+      copy:
+        content: "{{ compose_output | to_nice_json }}"
+        dest: "/root/shared/todoapi-stable/ansible_code/compose_output.json"
+
+    - name: Get docker compose logs
+      command: docker compose logs
+      args:
+        chdir: /root/shared/todoapi-stable
+      register: compose_logs
+
+    - name: Save compose logs
+      delegate_to: localhost
+      copy:
+        content: "{{ compose_logs | to_nice_json }}"
+        dest: "/root/shared/todoapi-stable/ansible_code/compose_logs.json"
