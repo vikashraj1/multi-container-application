@@ -49,6 +49,10 @@ curl -X POST http://todoapi.app/todos \
      ```bash
      curl -kO https://raw.githubusercontent.com/vikashraj1/multi-container-application/refs/heads/main/Infra/vagrant/Vagrantfile
      ```
+   - Run the command below to avoid errors on windows:
+     ```bash
+     git config core.autocrlf false
+     ```
    - Create a shared folder and clone the project repository:
      ```bash
      mkdir shared
@@ -64,17 +68,9 @@ curl -X POST http://todoapi.app/todos \
 
  **Docker Setup**
    - Create dockerhub account and a repository
-
-   - In the `docker-compose.yml` file, update the `image` field with your Docker Hub repository. *Also change `tag` in `docker-publish.yml` for the GitHub Actions workflow*
-
-
-   - Export your Docker Hub credentials:
-     ```bash
-     export DOCKER_USERNAME=your_docker_username
-     export DOCKER_PASSWORD=your_docker_password
-     ```
-   - Also add these credentials as secrets in your GitHub repository for GitHub Actions workflow to push image to your dockerhub repository
-
+   - In the `docker-compose.yml` file, update the `image` field with your Docker Hub repository.  
+   - Change `tag` in `docker-publish.yml` for the GitHub Actions workflow*
+   - Add these credentials as secrets in your GitHub repository for GitHub Actions workflow to push image to your dockerhub repository
 
  **Deploy the Application with Ansible:**
 
@@ -84,13 +80,19 @@ curl -X POST http://todoapi.app/todos \
      cd /root/shared/ansible_code
      ```
 
+   - Export your Docker Hub credentials:
+     ```bash
+     export DOCKER_USERNAME='your_docker_username'
+     export DOCKER_PASSWORD='your_docker_password'
+     ```
+
    - Run the playbook:
      ```bash
      ansible-playbook -i inventory playbook.yml
      ```
 
  **Test the API:**
-   - Verify that the API is running:
+   - Verify that the API and Database is up and running:
      ```bash
      curl http://todoapi.app
      curl http://todoapi.app/todos
