@@ -29,6 +29,10 @@ curl -X POST http://todoapi.app/todos \
   -d '{"title": "My Todo", "description": "Todo description", "completed": false}'
 ```
 
+## Project Architecture (Vagrant) 🌆
+
+![Architecture](readme-todoapi-arch.svg)
+
 ---
 
 ## Project Setup (using Vagrant) 🛠
@@ -48,10 +52,6 @@ curl -X POST http://todoapi.app/todos \
    - Download `Vagrantfile`:
      ```bash
      curl -kO https://raw.githubusercontent.com/vikashraj1/multi-container-application/refs/heads/main/Infra/vagrant/Vagrantfile
-     ```
-   - Run the command below to avoid errors on windows:
-     ```bash
-     git config core.autocrlf false
      ```
    - Create a shared folder and clone the project repository:
      ```bash
